@@ -321,7 +321,7 @@ export default function Home() {
           {/* Generate button */}
           <button
             type="button"
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={generating || !hasInput}
             className="w-full flex items-center justify-center gap-2 py-3 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
