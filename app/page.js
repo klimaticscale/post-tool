@@ -113,6 +113,8 @@ export default function Home() {
   const [generating, setGenerating] = useState(false)
   const [generateError, setGenerateError] = useState(null)
   const [version, setVersion] = useState(0)
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedback, setFeedback] = useState('')
 
   const [carousel, setCarousel] = useState(null)
   const [carouselLoading, setCarouselLoading] = useState(false)
@@ -153,7 +155,7 @@ export default function Home() {
   }
 
   // ── Generate post ──────────────────────────────────────────────────────────
-  const handleGenerate = async () => {
+  const handleGenerate = async (feedbackText = '') => {
     setGenerating(true)
     setGenerateError(null)
     setCarousel(null)
@@ -161,12 +163,14 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, feedback: feedbackText }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Generation failed')
       setPost(data.post)
       setVersion(v => v + 1)
+      setShowFeedback(false)
+      setFeedback('')
     } catch (err) {
       setGenerateError(err.message)
     } finally {
@@ -243,16 +247,6 @@ export default function Home() {
             rows={5}
           />
 
-          <Textarea
-            label="Hook Ideas"
-            sublabel="optional"
-            name="hooks"
-            value={form.hooks}
-            onChange={handleChange}
-            placeholder="Lines you're thinking about for the opening..."
-            rows={2}
-          />
-
           {/* Auto-fill button */}
           <div>
             <button
@@ -306,6 +300,22 @@ export default function Home() {
                 </div>
               ))}
             </div>
+
+            {/* Hook ideas — lives here alongside SUCCESs fields */}
+            <div className="mt-4">
+              <label className="block mb-1.5">
+                <span className="text-xs font-medium text-zinc-400">Hook Ideas</span>
+                <span className="ml-2 text-xs text-zinc-600">optional — opening lines to draw from</span>
+              </label>
+              <textarea
+                name="hooks"
+                value={form.hooks}
+                onChange={handleChange}
+                placeholder="Lines you're thinking about for the opening..."
+                rows={2}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-white placeholder-zinc-700 focus:outline-none focus:border-zinc-600 resize-none text-sm leading-relaxed transition-colors"
+              />
+            </div>
           </div>
 
           {/* Generate button */}
@@ -339,25 +349,58 @@ export default function Home() {
               <CharBar count={post.length} />
             </div>
 
-            {/* Iterate / continue */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={generating}
-                className="flex items-center gap-2 flex-1 justify-center py-2.5 text-sm border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                {generating ? <><Spinner size={3} /> Generating…</> : '↺  New version'}
-              </button>
-              <button
-                type="button"
-                onClick={handleCarousel}
-                disabled={carouselLoading}
-                className="flex items-center gap-2 flex-1 justify-center py-2.5 text-sm border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                {carouselLoading ? <><Spinner size={3} /> Creating…</> : '⊞  Create carousel'}
-              </button>
-            </div>
+            {/* Feedback + iterate */}
+            {showFeedback ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-zinc-400 uppercase tracking-widest">
+                  What should be different?
+                </label>
+                <textarea
+                  value={feedback}
+                  onChange={e => setFeedback(e.target.value)}
+                  placeholder="e.g. Make it shorter, lead with the statistic, more emotional..."
+                  rows={2}
+                  autoFocus
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder-zinc-700 focus:outline-none focus:border-zinc-600 resize-none text-sm leading-relaxed transition-colors"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleGenerate(feedback)}
+                    disabled={generating}
+                    className="flex items-center gap-2 flex-1 justify-center py-2.5 text-sm bg-white text-black rounded-lg hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    {generating ? <><Spinner size={3} /> Generating…</> : 'Regenerate'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowFeedback(false); setFeedback('') }}
+                    className="px-4 py-2.5 text-sm border border-zinc-800 text-zinc-600 rounded-lg hover:border-zinc-600 hover:text-zinc-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowFeedback(true)}
+                  disabled={generating}
+                  className="flex items-center gap-2 flex-1 justify-center py-2.5 text-sm border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  ↺  New version
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCarousel}
+                  disabled={carouselLoading}
+                  className="flex items-center gap-2 flex-1 justify-center py-2.5 text-sm border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  {carouselLoading ? <><Spinner size={3} /> Creating…</> : '⊞  Create carousel'}
+                </button>
+              </div>
+            )}
             {carouselError && (
               <p className="text-xs text-red-400">{carouselError}</p>
             )}
